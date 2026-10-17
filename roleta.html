@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roleta Instantânea — Gira Itararé</title>
+<style>
+:root {--azul:#2196F3;--verde:#22c55e;--amarelo:#f59e0b;--vermelho:#ef4444;--fundo:#0f172a;--card:#1e293b;--texto:#f8fafc;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{background:var(--fundo);color:var(--texto);padding:20px;min-height:100vh;}
+.container{max-width:700px;margin:0 auto;}
+
+header{background:var(--card);padding:15px 20px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+h1{font-size:1.2rem;color:var(--azul);}
+.saldo{font-weight:bold;color:var(--verde);background:rgba(34,197,94,.1);padding:6px 14px;border-radius:20px;font-size:1rem;}
+.voltar{color:var(--azul);text-decoration:none;font-size:0.9rem;display:inline-block;margin-bottom:15px;}
+
+.painel{background:var(--card);padding:25px;border-radius:12px;text-align:center;margin-bottom:20px;}
+.painel h2{font-size:1.1rem;margin-bottom:15px;color:var(--azul);}
+
+/* Roleta Visual com 12 Setores - Giro de 11 segundos */
+.roleta-container{position:relative;width:320px;height:320px;margin:0 auto 20px;}
+.ponteiro{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:26px solid #fff;z-index:20;}
+
+.roleta-roda{width:100%;height:100%;border-radius:50%;border:6px solid var(--azul);position:relative;transition:transform 11s cubic-bezier(0.15, 0.15, 0.15, 1);background:conic-gradient(
+  #22c55e 0deg 30deg, 
+  #475569 30deg 60deg, 
+  #3b82f6 60deg 90deg, 
+  #64748b 90deg 120deg, 
+  #f59e0b 120deg 150deg, 
+  #475569 150deg 180deg, 
+  #ec4899 180deg 210deg, 
+  #64748b 210deg 240deg, 
+  #8b5cf6 240deg 270deg, 
+  #475569 270deg 300deg, 
+  #ef4444 300deg 330deg, 
+  #64748b 330deg 360deg
+);box-shadow:0 0 25px rgba(33,150,243,0.4);}
+
+/* Textos posicionados exatamente no centro de cada fatia */
+.fatia-texto{position:absolute;width:100%;height:100%;top:0;left:0;text-align:center;font-size:0.65rem;font-weight:bold;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,0.9);padding-top:22px;}
+
+.fatia-1{transform:rotate(15deg);}
+.fatia-2{transform:rotate(45deg);font-size:0.55rem;}
+.fatia-3{transform:rotate(75deg);}
+.fatia-4{transform:rotate(105deg);font-size:0.55rem;}
+.fatia-5{transform:rotate(135deg);}
+.fatia-6{transform:rotate(165deg);font-size:0.55rem;}
+.fatia-7{transform:rotate(195deg);}
+.fatia-8{transform:rotate(225deg);font-size:0.55rem;}
+.fatia-9{transform:rotate(255deg);}
+.fatia-10{transform:rotate(285deg);font-size:0.55rem;}
+.fatia-11{transform:rotate(315deg);}
+.fatia-12{transform:rotate(345deg);font-size:0.55rem;}
+
+.btn-girar{background:var(--verde);color:white;padding:14px 30px;font-size:1.1rem;border:none;border-radius:8px;font-weight:bold;cursor:pointer;width:100%;transition:opacity .2s;}
+.btn-girar:disabled{background:#475569;cursor:not-allowed;}
+
+/* Grid de Compras Arrumado e Responsivo */
+.grid-compras{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:650px){.grid-compras{grid-template-columns:1fr;}}
+
+.bloco-acao{background:var(--card);padding:20px;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;}
+.bloco-acao h3{font-size:1rem;color:var(--azul);margin-bottom:10px;}
+
+.quantidade{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0;}
+.quantidade button{width:36px;height:36px;border-radius:50%;font-size:1.2rem;background:var(--azul);color:white;border:none;cursor:pointer;}
+.quantidade input{width:60px;text-align:center;padding:8px;border-radius:6px;border:none;background:var(--fundo);color:white;font-size:1rem;}
+
+.input-padrao{width:100%;padding:10px;border-radius:6px;border:none;background:var(--fundo);color:white;text-align:center;font-size:1rem;margin:12px 0;}
+
+.btn-comprar{background:var(--amarelo);color:#000;padding:12px;border:none;border-radius:8px;font-weight:bold;width:100%;cursor:pointer;}
+.btn-credito{background:var(--azul);color:#fff;padding:12px;border:none;border-radius:8px;font-weight:bold;width:100%;cursor:pointer;}
+
+.lista-pedidos{margin-top:15px;max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.pedido{background:var(--fundo);padding:8px 10px;border-radius:6px;border-left:3px solid var(--amarelo);font-size:0.8rem;text-align:left;}
+.pedido.liberado{border-left-color:var(--verde);}
+.status-tag{display:inline-block;padding:2px 6px;border-radius:10px;font-size:0.7rem;font-weight:bold;margin-top:3px;}
+.tag-pendente{background:rgba(245,158,11,.15);color:#fbbf24;}
+.tag-liberado{background:rgba(34,197,94,.15);color:#4ade80;}
+.vazio{color:#64748b;padding:8px;font-size:0.85rem;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body onload="iniciar()">
+<div class="container">
+<a href="jogador.html" class="voltar">← Voltar para o Bingo / Início</a>
+<header>
+<h1>🎡 Roleta Instantânea</h1>
+<div class="saldo">R$ <span id="meuSaldo">0,00</span></div>
+</header>
+
+<div class="painel">
+<h2>Gire e Ganhe Prêmios na Hora!</h2>
+<div style="font-size:0.9rem;color:#94a3b8;margin-bottom:15px;">Giros Disponíveis: <strong id="girosDisponiveis" style="color:var(--amarelo);font-size:1.2rem;">0</strong></div>
+
+<div class="roleta-container">
+<div class="ponteiro"></div>
+<div class="roleta-roda" id="roletaRoda">
+  <!-- Valores posicionados perfeitamente no centro de cada fatia -->
+  <div class="fatia-texto fatia-1">R$ 2</div>
+  <div class="fatia-texto fatia-2">Não foi</div>
+  <div class="fatia-texto fatia-3">R$ 5</div>
+  <div class="fatia-texto fatia-4">Não foi</div>
+  <div class="fatia-texto fatia-5">R$ 10</div>
+  <div class="fatia-texto fatia-6">Não foi</div>
+  <div class="fatia-texto fatia-7">R$ 20</div>
+  <div class="fatia-texto fatia-8">Não foi</div>
+  <div class="fatia-texto fatia-9">R$ 50</div>
+  <div class="fatia-texto fatia-10">Não foi</div>
+  <div class="fatia-texto fatia-11">R$ 100</div>
+  <div class="fatia-texto fatia-12">Não foi</div>
+</div>
+</div>
+
+<button class="btn-girar" id="btnGirar" onclick="girarRoleta()">🎲 GIRAR ROLETA</button>
+<p id="resultadoGiro" style="margin-top:15px;font-weight:bold;font-size:1.1rem;color:var(--verde);min-height:25px;"></p>
+</div>
+
+<!-- Grid de Compras e Crédito -->
+<div class="grid-compras">
+  <!-- COMPRAR GIROS -->
+  <div class="bloco-acao">
+    <div>
+      <h3>🛒 Comprar Giros</h3>
+      <p style="font-size:0.8rem;color:#94a3b8;">R$ 0,49 por giro</p>
+      <div class="quantidade">
+        <button onclick="alterarQtd(-1)">−</button>
+        <input type="number" id="qtdGiros" value="1" min="1" max="50" oninput="atualizarTotal()">
+        <button onclick="alterarQtd(1)">+</button>
+      </div>
+      <p style="font-size:0.85rem;margin-bottom:10px;">Total: R$ <span id="totalPreco">0,49</span></p>
+    </div>
+    <div>
+      <button class="btn-comprar" onclick="comprarGiros()">Comprar / Solicitar</button>
+      <div class="lista-pedidos" id="listaPedidosGiros"><p class="vazio">Nenhum pedido</p></div>
+    </div>
+  </div>
+
+  <!-- SOLICITAR CRÉDITO -->
+  <div class="bloco-acao">
+    <div>
+      <h3>💰 Solicitar Crédito</h3>
+      <p style="font-size:0.8rem;color:#94a3b8;">Adicionar saldo na conta</p>
+      <input type="number" id="valorSolicitadoCredito" class="input-padrao" placeholder="Valor R$" step="0.50" min="0.50">
+    </div>
+    <div>
+      <button class="btn-credito" onclick="solicitarCredito()">Solicitar Saldo</button>
+      <div class="lista-pedidos" id="listaPedidosCredito"><p class="vazio">Nenhum pedido</p></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB7DaddpD-6vqmbRnHRwR_wIAu81xWsg1Y",
+  authDomain: "gira-sorte.firebaseapp.com",
+  databaseURL: "https://gira-sorte-default-rtdb.firebaseio.com",
+  projectId: "gira-sorte",
+  storageBucket: "gira-sorte.appspot.com",
+  messagingSenderId: "886050266980",
+  appId: "1:886050266980:web:b1bbd1bb09daecd4c2e471"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const PRECO_GIRO = 0.49;
+
+let usuario = null;
+let giros = 0;
+let totalGirosRealizados = 0;
+let emMovimento = false;
+
+const premiosPossiveis = [
+  { nome: "R$ 2,00", valor: 2.00, angulo: 15 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 45 },
+  { nome: "R$ 5,00", valor: 5.00, angulo: 75 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 105 },
+  { nome: "R$ 10,00", valor: 10.00, angulo: 135 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 165 },
+  { nome: "R$ 20,00", valor: 20.00, angulo: 195 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 225 },
+  { nome: "R$ 50,00", valor: 50.00, angulo: 255 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 285 },
+  { nome: "R$ 100,00", valor: 100.00, angulo: 315 },
+  { nome: "Não foi dessa vez", valor: 0, angulo: 345 }
+];
+
+function iniciar() {
+  const logado = localStorage.getItem('bingo_usuario');
+  if(!logado){ window.location.href='cadastro.html'; return; }
+  usuario = JSON.parse(logado);
+
+  db.ref('usuarios/' + usuario.whatsapp).on('value', snap => {
+    const dados = snap.val();
+    if(dados) {
+      usuario.saldo = dados.saldo || 0;
+      giros = dados.girosRoleta || 0;
+      totalGirosRealizados = dados.totalGirosRealizados || 0;
+      document.getElementById('meuSaldo').textContent = usuario.saldo.toFixed(2).replace('.', ',');
+      document.getElementById('girosDisponiveis').textContent = giros;
+    }
+  });
+
+  db.ref('pedidosGiros').orderByChild('jogadorWhatsapp').equalTo(usuario.whatsapp).on('value', snap => {
+    const todos = snap.val() || {};
+    const lista = Object.entries(todos).map(([id,val])=>({id,...val}));
+    renderizarPedidosGiros(lista);
+  });
+
+  db.ref('solicitacoesCredito').orderByChild('jogadorWhatsapp').equalTo(usuario.whatsapp).on('value', snap => {
+    const todos = snap.val() || {};
+    const lista = Object.entries(todos).map(([id,val])=>({id,...val}));
+    renderizarPedidosCredito(lista);
+  });
+}
+
+function alterarQtd(valor){
+  let input = document.getElementById('qtdGiros');
+  let nova = parseInt(input.value) + valor;
+  if(nova >= 1 && nova <= 50){
+    input.value = nova;
+    atualizarTotal();
+  }
+}
+
+function atualizarTotal(){
+  let qtd = parseInt(document.getElementById('qtdGiros').value) || 1;
+  let total = qtd * PRECO_GIRO;
+  document.getElementById('totalPreco').textContent = total.toFixed(2).replace('.', ',');
+}
+
+function comprarGiros(){
+  let qtd = parseInt(document.getElementById('qtdGiros').value) || 1;
+  let total = qtd * PRECO_GIRO;
+
+  if(usuario.saldo >= total){
+    db.ref('usuarios/' + usuario.whatsapp + '/saldo').set(usuario.saldo - total);
+    db.ref('usuarios/' + usuario.whatsapp + '/girosRoleta').transaction(g => (g || 0) + qtd);
+    db.ref('pedidosGiros').push({
+      jogadorWhatsapp: usuario.whatsapp,
+      jogadorNome: usuario.nome,
+      quantidade: qtd,
+      status: 'liberado',
+      data: new Date().toISOString()
+    });
+    alert('Compra de giros realizada com sucesso usando seu saldo!');
+  } else {
+    db.ref('pedidosGiros').push({
+      jogadorWhatsapp: usuario.whatsapp,
+      jogadorNome: usuario.nome,
+      quantidade: qtd,
+      status: 'pendente',
+      data: new Date().toISOString()
+    });
+    alert('Saldo insuficiente. Pedido enviado para aprovação do administrador!');
+  }
+}
+
+function solicitarCredito(){
+  let valorInput = document.getElementById('valorSolicitadoCredito');
+  let valor = parseFloat(valorInput.value);
+  if(!valor || valor <= 0){
+    alert('Digite um valor válido para solicitar crédito.');
+    return;
+  }
+  db.ref('solicitacoesCredito').push({
+    jogadorWhatsapp: usuario.whatsapp,
+    jogadorNome: usuario.nome,
+    valor: valor,
+    status: 'pendente',
+    data: new Date().toISOString()
+  });
+  valorInput.value = '';
+  alert('Solicitação de crédito enviada com sucesso!');
+}
+
+function renderizarPedidosGiros(pedidos){
+  const el = document.getElementById('listaPedidosGiros');
+  if(pedidos.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum pedido</p>';
+    return;
+  }
+  el.innerHTML = pedidos.map(p => `
+    <div class="pedido ${p.status === 'liberado' ? 'liberado' : ''}">
+      <div><strong>${p.quantidade} giro(s)</strong> — R$ ${(p.quantidade * PRECO_GIRO).toFixed(2).replace('.', ',')}</div>
+      <span class="status-tag ${p.status === 'liberado' ? 'tag-liberado' : 'tag-pendente'}">
+        ${p.status === 'liberado' ? 'Liberado' : 'Pendente'}
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderizarPedidosCredito(pedidos){
+  const el = document.getElementById('listaPedidosCredito');
+  if(pedidos.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum pedido</p>';
+    return;
+  }
+  el.innerHTML = pedidos.map(p => `
+    <div class="pedido ${p.status === 'aprovado' || p.status === 'liberado' ? 'liberado' : ''}">
+      <div><strong>Crédito:</strong> R$ ${p.valor.toFixed(2).replace('.', ',')}</div>
+      <span class="status-tag ${p.status === 'aprovado' || p.status === 'liberado' ? 'tag-liberado' : 'tag-pendente'}">
+        ${p.status === 'aprovado' || p.status === 'liberado' ? 'Aprovado' : 'Pendente'}
+      </span>
+    </div>
+  `).join('');
+}
+
+// Sistema de Melodia Empolgante + Som de Roleta Girando ao Fundo (11 Segundos)
+function tocarAudioRoletaEmpolgante() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let tempoInicio = audioCtx.currentTime;
+    
+    const melodia = [330, 392, 440, 523, 587, 659, 784, 880];
+    
+    for (let i = 0; i < 55; i++) {
+      let osc = audioCtx.createOscillator();
+      let gain = audioCtx.createGain();
+      
+      osc.type = i % 2 === 0 ? 'square' : 'sawtooth';
+      let freq = melodia[i % melodia.length];
+      osc.frequency.setValueAtTime(freq, tempoInicio + (i * 0.2));
+      
+      gain.gain.setValueAtTime(0.08, tempoInicio + (i * 0.2));
+      gain.gain.exponentialRampToValueAtTime(0.001, tempoInicio + (i * 0.2) + 0.18);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start(tempoInicio + (i * 0.2));
+      osc.stop(tempoInicio + (i * 0.2) + 0.2);
+    }
+
+    for (let t = 0; t < 11; t += 0.15) {
+      let noiseOsc = audioCtx.createOscillator();
+      let noiseGain = audioCtx.createGain();
+      
+      noiseOsc.type = 'sine';
+      noiseOsc.frequency.setValueAtTime(120 + Math.random() * 80, tempoInicio + t);
+      
+      noiseGain.gain.setValueAtTime(0.05, tempoInicio + t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, tempoInicio + t + 0.08);
+      
+      noiseOsc.connect(noiseGain);
+      noiseGain.connect(audioCtx.destination);
+      
+      noiseOsc.start(tempoInicio + t);
+      noiseOsc.stop(tempoInicio + t + 0.08);
+    }
+  } catch(e) {
+    console.log("Áudio não suportado ou bloqueado pelo navegador");
+  }
+}
+
+function girarRoleta(){
+  if(emMovimento) return;
+  if(giros <= 0){
+    alert('Você não tem giros disponíveis! Compre mais giros ao lado.');
+    return;
+  }
+
+  emMovimento = true;
+  document.getElementById('btnGirar').disabled = true;
+  document.getElementById('resultadoGiro').textContent = 'Girando com emoção... 🎲🎶';
+
+  totalGirosRealizados++;
+
+  db.ref('usuarios/' + usuario.whatsapp + '/girosRoleta').set(giros - 1);
+  db.ref('usuarios/' + usuario.whatsapp + '/totalGirosRealizados').set(totalGirosRealizados);
+
+  tocarAudioRoletaEmpolgante();
+
+  // Filtra os prêmios disponíveis para excluir fisicamente os valores bloqueados do sorteio
+  let premiosDisponiveis = premiosPossiveis.filter(p => {
+    if (p.valor === 100.00 && totalGirosRealizados < 110) return false;
+    if (p.valor === 50.00 && totalGirosRealizados < 60) return false;
+    return true;
+  });
+
+  const premioSorteado = premiosDisponiveis[Math.floor(Math.random() * premiosDisponiveis.length)];
+  const voltasExtras = 360 * 8;
+  const anguloFinal = voltasExtras + (360 - premioSorteado.angulo);
+
+  const roda = document.getElementById('roletaRoda');
+  roda.style.transform = `rotate(${anguloFinal}deg)`;
+
+  setTimeout(() => {
+    emMovimento = false;
+    document.getElementById('btnGirar').disabled = false;
+
+    if(premioSorteado.valor > 0){
+      document.getElementById('resultadoGiro').textContent = `🎉 PARABÉNS! Você ganhou ${premioSorteado.nome}!`;
+      db.ref('usuarios/' + usuario.whatsapp + '/saldo').transaction(s => (s || 0) + premioSorteado.valor);
+    } else {
+      document.getElementById('resultadoGiro').textContent = '😢 Não foi dessa vez! Tente novamente.';
+    }
+
+    setTimeout(() => {
+      roda.style.transition = 'none';
+      roda.style.transform = `rotate(${360 - premioSorteado.angulo}deg)`;
+      setTimeout(() => {
+        roda.style.transition = 'transform 11s cubic-bezier(0.15, 0.15, 0.15, 1)';
+      }, 50);
+    }, 1000);
+
+  }, 11000);
+}
+</script>
+</body>
+</html>

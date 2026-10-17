@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Administrador — Gira Itararé</title>
+<style>
+:root {--azul:#2196F3;--verde:#22c55e;--amarelo:#f59e0b;--vermelho:#ef4444;--fundo:#0f172a;--card:#1e293b;--texto:#f8fafc;--cinza:#94a3b8;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+body{background:var(--fundo);color:var(--texto);padding:15px;min-height:100vh;}
+.container{max-width:1300px;margin:0 auto;}
+
+header{background:var(--card);padding:15px 20px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+h1{font-size:1.2rem;color:var(--azul);}
+
+.btn-roleta-topo{background:var(--amarelo);color:#000;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;}
+
+.menu-abas{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.aba{background:var(--card);padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:bold;font-size:0.9rem;color:var(--cinza);border:2px solid transparent;position:relative;}
+.aba.ativa{color:var(--texto);border-color:var(--azul);background:#1a2c47;}
+
+.badge-aviso {
+  background: var(--vermelho);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.painel{background:var(--card);padding:20px;border-radius:12px;margin-bottom:20px;}
+.painel h2{font-size:1.1rem;margin-bottom:15px;color:var(--azul);}
+
+.esconder{display:none !important;}
+
+.horarios-admin{display:flex;gap:10px;margin-bottom:20px;max-width:500px;flex-wrap:wrap;}
+.horario-admin{flex:1;min-width:140px;padding:10px;background:var(--fundo);border-radius:8px;cursor:pointer;border:2px solid transparent;text-align:center;font-weight:bold;font-size:0.85rem;}
+.horario-admin.selecionado{border-color:var(--azul);background:#1a2c47;color:var(--azul);}
+
+.tabuleiro{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-bottom:15px;}
+.bola{aspect-ratio:1;background:var(--fundo);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;}
+.bola.sorteada{background:var(--verde);color:var(--fundo);font-weight:bold;}
+
+.botoes-acao{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+button{padding:10px 16px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:0.9rem;transition:opacity .2s;}
+button:hover{opacity:.9;}
+.btn-sortear{background:var(--verde);color:#fff;}
+.btn-auto{background:var(--azul);color:#fff;}
+.btn-limpar{background:var(--vermelho);color:#fff;}
+.btn-aprovar{background:var(--verde);color:#fff;}
+.btn-rejeitar{background:var(--vermelho);color:#fff;}
+.btn-excluir{background:var(--vermelho);color:#fff;}
+
+.grid-metricas{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:15px;margin-bottom:20px;}
+.card-metrica{background:var(--fundo);padding:20px;border-radius:10px;border-top:4px solid var(--azul);text-align:center;}
+.card-metrica h3{font-size:0.85rem;color:var(--cinza);margin-bottom:8px;}
+.card-metrica .valor{font-size:1.5rem;font-weight:bold;color:var(--verde);}
+
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:15px;}
+.card-item{background:var(--fundo);padding:15px;border-radius:8px;border-left:4px solid var(--amarelo);font-size:0.9rem;line-height:1.6;}
+.card-item.aprovado{border-left-color:var(--verde);}
+
+.input-padrao{width:100%;padding:10px;border-radius:6px;border:none;background:var(--fundo);color:white;font-size:0.95rem;margin:8px 0;}
+.vazio{color:var(--cinza);text-align:center;padding:20px;}
+
+#alertaAdminModal {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#alertaAdminModal.ativo {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-conteudo-admin {
+  background: var(--card);
+  border: 4px solid var(--amarelo);
+  padding: 30px 40px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.7);
+  max-width: 500px;
+  width: 90%;
+}
+.modal-conteudo-admin h2 {color: var(--amarelo); font-size: 1.5rem; margin-bottom: 10px;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body onload="iniciar()">
+
+<div id="alertaAdminModal">
+  <div class="modal-conteudo-admin">
+    <div style="font-size:3.5rem;margin-bottom:10px;">🏆</div>
+    <h2>NOVO PRÊMIO CONQUISTADO!</h2>
+    <p id="textoModalAdmin" style="font-size:1.1rem;color:var(--texto);margin-bottom:20px;font-weight:bold;line-height:1.6;"></p>
+    <button class="btn-sortear" onclick="fecharAlertaAdmin()" style="width:100%;padding:12px;font-size:1rem;">OK / Fechar Alerta</button>
+  </div>
+</div>
+
+<div class="container">
+<header>
+<h1>🎡 Painel Administrativo — Gira Itararé</h1>
+<a href="roleta.html" target="_blank" class="btn-roleta-topo">🎡 Ir para Roleta Instantânea</a>
+</header>
+
+<div class="menu-abas">
+  <div class="aba ativa" onclick="mudarAba('sorteio', this)">🎯 Sorteio Bingo</div>
+  <div class="aba" onclick="mudarAba('relatorios', this)">📊 Relatórios <span id="badgeRelatorios" class="badge-aviso esconder">0</span></div>
+  <div class="aba" onclick="mudarAba('cadastros', this)">👥 Cadastros <span id="badgeCadastros" class="badge-aviso esconder">0</span></div>
+  <div class="aba" onclick="mudarAba('cartelas', this)">🎫 Cartelas <span id="badgeCartelas" class="badge-aviso esconder">0</span></div>
+  <div class="aba" onclick="mudarAba('giros', this)">🎡 Giros <span id="badgeGiros" class="badge-aviso esconder">0</span></div>
+  <div class="aba" onclick="mudarAba('saldo', this)">💰 Saldo/Resgates <span id="badgeCredito" class="badge-aviso esconder">0</span></div>
+  <div class="aba" onclick="mudarAba('mensagens', this)">📢 Mensagens</div>
+</div>
+
+<div id="aba-sorteio" class="painel">
+  <h2>🎯 Escolha o Horário do Sorteio Atual</h2>
+  <div class="horarios-admin">
+    <div class="horario-admin" onclick="definirHorarioSorteio('Manhã (11:00)', '11:00')" id="adm-h-manha">🌅 11:00 (Manhã)</div>
+    <div class="horario-admin" onclick="definirHorarioSorteio('Tarde (15:45)', '15:45')" id="adm-h-tarde">🌤️ 15:45 (Tarde)</div>
+    <div class="horario-admin" onclick="definirHorarioSorteio('Noite (19:30)', '19:30')" id="adm-h-noite">🌙 19:30 (Noite)</div>
+  </div>
+
+  <h2>🎯 Globo e Números Sorteados — <span id="horarioAtivoDisplay" style="color:var(--amarelo);">Nenhum selecionado</span></h2>
+  <div style="font-size:1.2rem;margin-bottom:15px;">Última Bola: <strong id="ultimaBola" style="color:var(--verde);">--</strong></div>
+  <div class="tabuleiro" id="tabuleiroAdmin"></div>
+  <div class="botoes-acao">
+    <button class="btn-sortear" onclick="sortearProximaBola()">🎲 Sortear Próxima Bola</button>
+    <button class="btn-auto" id="btnAutoSorteio" onclick="alternarSorteioAutomatico()">▶ Iniciar Sorteio Automático</button>
+    <button class="btn-limpar" onclick="reiniciarSorteio()">🗑️ Reiniciar / Nova Partida</button>
+  </div>
+</div>
+
+<div id="aba-relatorios" class="painel esconder">
+  <h2>📊 Métricas, Arrecadação e Ganhadores</h2>
+  
+  <div class="grid-metricas">
+    <div class="card-metrica">
+      <h3>💵 Total Arrecadado</h3>
+      <div class="valor" id="totalArrecadado">R$ 0,00</div>
+    </div>
+    <div class="card-metrica" style="border-top-color:var(--verde);">
+      <h3>🎫 Cartelas Vendidas</h3>
+      <div class="valor" id="totalCartelasVendidas" style="color:var(--azul);">0</div>
+    </div>
+    <div class="card-metrica" style="border-top-color:var(--amarelo);">
+      <h3>🎡 Giros Comprados</h3>
+      <div class="valor" id="totalGirosComprados" style="color:var(--amarelo);">0</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:1rem;color:var(--azul);margin:20px 0 10px;">🏆 Ganhadores do Bingo</h3>
+  <div id="listaGanhadoresBingo" class="grid-cards"><p class="vazio">Nenhum ganhador de bingo registrado ainda</p></div>
+
+  <h3 style="font-size:1rem;color:var(--amarelo);margin:25px 0 10px;">🎡 Ganhadores / Prêmios da Roleta Instantânea</h3>
+  <div id="listaGanhadoresRoleta" class="grid-cards"><p class="vazio">Nenhum prêmio de roleta registrado ainda</p></div>
+</div>
+
+<div id="aba-cadastros" class="painel esconder">
+  <div class="grid-metricas" style="margin-bottom:20px;">
+    <div class="card-metrica" style="border-top-color: var(--verde);">
+      <h3>🟢 Usuários Online Agora</h3>
+      <div class="valor" id="totalOnline" style="color: var(--verde);">0</div>
+    </div>
+  </div>
+
+  <h2>👥 Aprovação de Cadastros Pendentes</h2>
+  <div id="listaCadastros" class="grid-cards" style="margin-bottom:25px;"><p class="vazio">Nenhum cadastro pendente</p></div>
+
+  <h2 style="border-top: 1px solid #334155; padding-top: 20px;">📋 Todos os Usuários Registrados</h2>
+  <div id="listaTodosCadastros" class="grid-cards"><p class="vazio">Nenhum usuário registrado</p></div>
+</div>
+
+<div id="aba-cartelas" class="painel esconder">
+  <h2>🎫 Pedidos de Cartelas</h2>
+  <div id="listaPedidosCartelas" class="grid-cards"><p class="vazio">Nenhum pedido de cartela</p></div>
+</div>
+
+<div id="aba-giros" class="painel esconder">
+  <h2>🎡 Pedidos de Giros da Roleta</h2>
+  <div id="listaPedidosGiros" class="grid-cards"><p class="vazio">Nenhum pedido de giro</p></div>
+</div>
+
+<div id="aba-saldo" class="painel esconder">
+  <h2>💰 Adicionar Saldo ou Confirmar Resgates</h2>
+  <div style="max-width:500px;margin-bottom:25px;">
+    <label style="font-size:0.85rem;">WhatsApp do Jogador:</label>
+    <input type="text" id="saldoWhatsapp" class="input-padrao" placeholder="Ex: 15999999999">
+    
+    <label style="font-size:0.85rem;">Valor (R$):</label>
+    <input type="number" id="saldoValor" class="input-padrao" placeholder="Ex: 10.00" step="0.50" min="0.50">
+    
+    <button class="btn-aprovar" onclick="adicionarSaldoManual()" style="margin-top:10px;width:100%;">➕ Adicionar Saldo na Conta</button>
+  </div>
+
+  <h3 style="font-size:1rem;margin:25px 0 10px;color:var(--azul);">Solicitações de Crédito e Resgates Pendentes</h3>
+  <div id="listaSolicitacoesCredito" class="grid-cards"><p class="vazio">Nenhuma solicitação pendente</p></div>
+</div>
+
+<div id="aba-mensagens" class="painel esconder">
+  <h2>📢 Enviar Mensagem para os Jogadores</h2>
+  <div style="max-width:600px;">
+    <textarea id="textoMsgAdmin" class="input-padrao" rows="4" placeholder="Digite o aviso ou mensagem..."></textarea>
+    <button class="btn-sortear" onclick="enviarMensagemGeral()">📤 Enviar para Todos</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB7DaddpD-6vqmbXXXXXXXXXXXXXXXX",
+  authDomain: "gira-sorte.firebaseapp.com",
+  databaseURL: "https://gira-sorte-default-rtdb.firebaseio.com/",
+  projectId: "gira-sorte",
+  storageBucket: "gira-sorte.appspot.com",
+  messagingSenderId: "886050266980",
+  appId: "1:886050266980:web:b1bbd1bb09daecd4c2e471"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+var numerosSorteados = [];
+var totalCartelasQtd = 0;
+var totalGirosQtd = 0;
+var arrecadacaoCartelas = 0;
+var arrecadacaoGiros = 0;
+var intervaloAuto = null;
+var idsPremiosDetectados = new Set();
+var primeiraExecucao = true;
+
+function iniciar(){
+  try {
+    criarTabuleiroAdmin();
+
+    db.ref('sorteio/numeros').on('value', function(snap) {
+      numerosSorteados = snap.val() || [];
+      atualizarTabuleiroAdmin();
+    });
+
+    db.ref('sorteio/horarioAtivo').on('value', function(snap) {
+      var h = snap.val() || 'Nenhum selecionado';
+      var el = document.getElementById('horarioAtivoDisplay');
+      if(el) el.textContent = h;
+      
+      var horarios = document.querySelectorAll('.horario-admin');
+      for(var i=0; i<horarios.length; i++) {
+        horarios[i].classList.remove('selecionado');
+      }
+      if (h.indexOf('11:00') !== -1) document.getElementById('adm-h-manha').classList.add('selecionado');
+      else if (h.indexOf('15:45') !== -1) document.getElementById('adm-h-tarde').classList.add('selecionado');
+      else if (h.indexOf('19:30') !== -1) document.getElementById('adm-h-noite').classList.add('selecionado');
+    });
+
+    db.ref('usuarios').on('value', function(snap) {
+      var todosObj = snap.val() || {};
+      var listaUsuarios = Object.entries(todosObj);
+      var pendentesList = listaUsuarios.filter(function(item) {
+        return item[1].status === 'pendente';
+      });
+      renderizarCadastros(pendentesList);
+      renderizarTodosCadastros(listaUsuarios);
+      
+      var badge = document.getElementById('badgeCadastros');
+      if (badge) {
+        if (pendentesList.length > 0) { 
+          badge.textContent = pendentesList.length; 
+          badge.classList.remove('esconder'); 
+        } else { 
+          badge.classList.add('esconder'); 
+        }
+      }
+    });
+
+    db.ref('pedidos').on('value', function(snap) {
+      var todos = snap.val() || {};
+      var lista = Object.entries(todos).map(function(entry) {
+        return Object.assign({id: entry[0]}, entry[1]);
+      });
+      renderizarPedidosCartelas(lista);
+      
+      totalCartelasQtd = 0; arrecadacaoCartelas = 0;
+      lista.forEach(function(p) {
+        totalCartelasQtd += parseInt(p.quantidade || 0);
+        arrecadacaoCartelas += parseFloat(p.valor || 0);
+      });
+      atualizarMetricas();
+      
+      var pendentes = lista.filter(function(p) { return p.status === 'pendente'; }).length;
+      var badge = document.getElementById('badgeCartelas');
+      if (badge) {
+        if (pendentes > 0) { badge.textContent = pendentes; badge.classList.remove('esconder'); }
+        else { badge.classList.add('esconder'); }
+      }
+    });
+
+    db.ref('pedidosGiros').on('value', function(snap) {
+      var todos = snap.val() || {};
+      var lista = Object.entries(todos).map(function(entry) {
+        return Object.assign({id: entry[0]}, entry[1]);
+      });
+      renderizarPedidosGiros(lista);
+      
+      totalGirosQtd = 0; arrecadacaoGiros = 0;
+      lista.forEach(function(p) {
+        totalGirosQtd += parseInt(p.quantidade || 0);
+        arrecadacaoGiros += parseFloat(p.valor || 0);
+      });
+      atualizarMetricas();
+      
+      var pendentes = lista.filter(function(p) { return p.status === 'pendente'; }).length;
+      var badge = document.getElementById('badgeGiros');
+      if (badge) {
+        if (pendentes > 0) { badge.textContent = pendentes; badge.classList.remove('esconder'); }
+        else { badge.classList.add('esconder'); }
+      }
+    });
+
+    db.ref('solicitacoesCredito').on('value', function(snap) {
+      var todos = snap.val() || {};
+      var lista = Object.entries(todos).map(function(entry) {
+        return Object.assign({id: entry[0]}, entry[1]);
+      });
+      renderizarSolicitacoesCredito(lista);
+
+      var pendentes = lista.filter(function(s) { return s.status === 'pendente'; }).length;
+      var badgeCred = document.getElementById('badgeCredito');
+      if(badgeCred){
+        if(pendentes > 0){
+          badgeCred.textContent = pendentes;
+          badgeCred.classList.remove('esconder');
+        } else {
+          badgeCred.classList.add('esconder');
+        }
+      }
+    });
+
+    db.ref('vencedores').on('value', function(snap) {
+      var dados = snap.val() || {};
+      renderizarGanhadoresBingo(dados);
+
+      Object.entries(dados).forEach(function(entry) {
+        var whatsapp = entry[0];
+        var premios = entry[1];
+        Object.entries(premios).forEach(function(pEntry) {
+          var chavePremio = pEntry[0];
+          var p = pEntry[1];
+          var idUnico = whatsapp + '_' + chavePremio;
+          if (!idsPremiosDetectados.has(idUnico)) {
+            idsPremiosDetectados.add(idUnico);
+            if (!primeiraExecucao) {
+              mostrarAlertaAdmin(p.jogadorNome || 'Jogador', p.tipo, p.detalhe, p.valorPremio, p.dataFormatada);
+            }
+            if (p.tipo === 'Cartela Cheia') pararSorteioAutomatico();
+          }
+        });
+      });
+    });
+
+    db.ref('vencedoresRoleta').on('value', function(snap) {
+      var dados = snap.val() || {};
+      renderizarGanhadoresRoleta(dados);
+
+      Object.entries(dados).forEach(function(entry) {
+        var idRoleta = entry[0];
+        var r = entry[1];
+        var idUnicoRoleta = 'roleta_' + idRoleta;
+        if (!idsPremiosDetectados.has(idUnicoRoleta)) {
+          idsPremiosDetectados.add(idUnicoRoleta);
+          if (!primeiraExecucao) {
+            mostrarAlertaAdmin(r.jogadorNome || 'Jogador', 'Prêmio da Roleta', r.premioNome, r.valor, r.dataFormatada || 'Agora');
+          }
+        }
+      });
+      primeiraExecucao = false;
+    });
+  } catch (e) {
+    console.error("Erro ao iniciar painel admin:", e);
+  }
+}
+
+function atualizarMetricas(){
+  var totalArrecadado = arrecadacaoCartelas + arrecadacaoGiros;
+  var elArrecadado = document.getElementById('totalArrecadado');
+  var elCartelas = document.getElementById('totalCartelasVendidas');
+  var elGiros = document.getElementById('totalGirosComprados');
+  
+  if(elArrecadado) elArrecadado.textContent = 'R$ ' + totalArrecadado.toFixed(2).replace('.', ',');
+  if(elCartelas) elCartelas.textContent = totalCartelasQtd;
+  if(elGiros) elGiros.textContent = totalGirosQtd;
+}
+
+function mostrarAlertaAdmin(nomeJogador, tipo, detalhe, valor, dataFormatada) {
+  var modal = document.getElementById('alertaAdminModal');
+  var texto = document.getElementById('textoModalAdmin');
+  if(texto) {
+    texto.innerHTML = 'O jogador <strong>' + nomeJogador + '</strong> ganhou:<br><span style="color:var(--verde);font-size:1.2rem;">' + tipo + ' (' + detalhe + ')</span><br>Valor: R$ ' + (valor || 0).toFixed(2).replace('.', ',') + '<br><span style="font-size:0.85rem;color:var(--cinza);">Data/Hora: ' + dataFormatada + '</span>';
+  }
+  if(modal) modal.classList.add('ativo');
+}
+
+function fecharAlertaAdmin() {
+  var modal = document.getElementById('alertaAdminModal');
+  if(modal) modal.classList.remove('ativo');
+}
+
+function definirHorarioSorteio(nomeHorario, horaStr){
+  db.ref('sorteio/horarioAtivo').set(nomeHorario).then(function() {
+    alert('Horário alterado para: ' + nomeHorario);
+  }).catch(function(err) { alert('Erro ao alterar horário: ' + err.message); });
+}
+
+function mudarAba(nomeAba, elemento){
+  var paineis = document.querySelectorAll('.painel');
+  for(var i=0; i<paineis.length; i++) {
+    paineis[i].classList.add('esconder');
+  }
+  var alvo = document.getElementById('aba-' + nomeAba);
+  if(alvo) alvo.classList.remove('esconder');
+  
+  var abas = document.querySelectorAll('.aba');
+  for(var j=0; j<abas.length; j++) {
+    abas[j].classList.remove('ativa');
+  }
+  if(elemento) elemento.classList.add('ativa');
+}
+
+function criarTabuleiroAdmin(){
+  var tab = document.getElementById('tabuleiroAdmin');
+  if(!tab) return;
+  tab.innerHTML = '';
+  for(var i=1; i<=75; i++){
+    var b = document.createElement('div');
+    b.className = 'bola';
+    b.id = 'admin-bola-' + i;
+    b.textContent = i;
+    tab.appendChild(b);
+  }
+}
+
+function atualizarTabuleiroAdmin(){
+  for(var i=1; i<=75; i++){
+    var b = document.getElementById('admin-bola-' + i);
+    if(b){
+      if(numerosSorteados.indexOf(i) !== -1){
+        b.classList.add('sorteada');
+      } else {
+        b.classList.remove('sorteada');
+      }
+    }
+  }
+  var ultima = numerosSorteados[numerosSorteados.length - 1];
+  var elUltima = document.getElementById('ultimaBola');
+  if(elUltima) elUltima.textContent = ultima ? ultima : '--';
+}
+
+function sortearProximaBola(){
+  if(numerosSorteados.length >= 75){
+    alert('Todas as 75 bolas já foram sorteadas!');
+    pararSorteioAutomatico();
+    return;
+  }
+  var proxima;
+  do {
+    proxima = Math.floor(Math.random() * 75) + 1;
+  } while(numerosSorteados.indexOf(proxima) !== -1);
+
+  numerosSorteados.push(proxima);
+  db.ref('sorteio/numeros').set(numerosSorteados).catch(function(err) { alert('Erro ao sortear: ' + err.message); });
+}
+
+function alternarSorteioAutomatico(){
+  var btn = document.getElementById('btnAutoSorteio');
+  if(intervaloAuto){
+    pararSorteioAutomatico();
+  } else {
+    intervaloAuto = setInterval(function() {
+      if(numerosSorteados.length >= 75){
+        pararSorteioAutomatico();
+        return;
+      }
+      sortearProximaBola();
+    }, 4000);
+    if(btn){
+      btn.textContent = '⏹ Parar Sorteio Automático';
+      btn.style.background = 'var(--vermelho)';
+    }
+  }
+}
+
+function pararSorteioAutomatico(){
+  if(intervaloAuto){
+    clearInterval(intervaloAuto);
+    intervaloAuto = null;
+    var btn = document.getElementById('btnAutoSorteio');
+    if(btn){
+      btn.textContent = '▶ Iniciar Sorteio Automático';
+      btn.style.background = 'var(--azul)';
+    }
+  }
+}
+
+function reiniciarSorteio(){
+  if(confirm('Deseja reiniciar o sorteio? Isso apagará os números e vencedores atuais.')){
+    pararSorteioAutomatico();
+    Promise.all([
+      db.ref('sorteio/numeros').remove(),
+      db.ref('sorteio/horarioAtivo').remove(),
+      db.ref('vencedores').remove()
+    ]).then(function() {
+      idsPremiosDetectados.clear();
+      primeiraExecucao = true;
+      alert('✅ Partida reiniciada com sucesso!');
+    }).catch(function(err) { alert('Erro ao reiniciar: ' + err.message); });
+  }
+}
+
+function renderizarGanhadoresBingo(vencedoresObj){
+  var el = document.getElementById('listaGanhadoresBingo');
+  if(!el) return;
+  var lista = [];
+  Object.entries(vencedoresObj).forEach(function(entry) {
+    var whatsapp = entry[0];
+    var premios = entry[1];
+    Object.values(premios).forEach(function(p) {
+      lista.push(Object.assign({whatsapp: whatsapp}, p));
+    });
+  });
+
+  if(lista.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum ganhador de bingo registrado</p>';
+    return;
+  }
+
+  var html = '';
+  lista.forEach(function(g) {
+    html += '<div class="card-item aprovado">' +
+      '<div><strong>🏆 Prêmio:</strong> ' + g.tipo + '</div>' +
+      '<div><strong>👤 Jogador:</strong> ' + (g.jogadorNome || 'Desconhecido') + '</div>' +
+      '<div><strong>📱 WhatsApp:</strong> ' + g.whatsapp + '</div>' +
+      '<div><strong>📄 Detalhe:</strong> ' + (g.detalhe || '-') + '</div>' +
+      '<div><strong>📅 Data/Hora:</strong> ' + (g.dataFormatada || 'N/D') + '</div>' +
+      '<div><strong>💰 Valor:</strong> R$ ' + (g.valorPremio || 0).toFixed(2).replace('.', ',') + '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderizarGanhadoresRoleta(roletaObj){
+  var el = document.getElementById('listaGanhadoresRoleta');
+  if(!el) return;
+  var lista = Object.values(roletaObj || {});
+
+  if(lista.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum prêmio de roleta registrado ainda</p>';
+    return;
+  }
+
+  var html = '';
+  lista.forEach(function(r) {
+    html += '<div class="card-item aprovado" style="border-left-color:var(--amarelo);">' +
+      '<div><strong>🎡 Prêmio:</strong> ' + (r.premioNome || 'Roleta') + '</div>' +
+      '<div><strong>👤 Jogador:</strong> ' + (r.jogadorNome || 'Desconhecido') + '</div>' +
+      '<div><strong>📱 WhatsApp:</strong> ' + (r.jogadorWhatsapp || 'N/D') + '</div>' +
+      '<div><strong>💰 Valor:</strong> R$ ' + (r.valor || 0).toFixed(2).replace('.', ',') + '</div>' +
+      '<div><strong>📅 Data/Hora:</strong> ' + (r.dataFormatada || 'Agora') + '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderizarCadastros(lista){
+  var el = document.getElementById('listaCadastros');
+  if(!el) return;
+  if(lista.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum cadastro pendente</p>';
+    return;
+  }
+  var html = '';
+  lista.forEach(function(item) {
+    var w = item[0];
+    var u = item[1];
+    html += '<div class="card-item">' +
+      '<div><strong>Nome:</strong> ' + (u.nome || 'Sem Nome') + '</div>' +
+      '<div><strong>WhatsApp:</strong> ' + w + '</div>' +
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button class="btn-aprovar" onclick="aprovarCadastro(\'' + w + '\')">✅ Aprovar</button>' +
+        '<button class="btn-rejeitar" onclick="rejeitarCadastro(\'' + w + '\')">❌ Rejeitar</button>' +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderizarTodosCadastros(lista){
+  var el = document.getElementById('listaTodosCadastros');
+  if(!el) return;
+  if(lista.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum usuário registrado</p>';
+    return;
+  }
+  var html = '';
+  lista.forEach(function(item) {
+    var w = item[0];
+    var u = item[1];
+    var classeAprovado = (u.status === 'aprovado') ? 'aprovado' : '';
+    html += '<div class="card-item ' + classeAprovado + '">' +
+      '<div><strong>Nome:</strong> ' + (u.nome || 'Sem Nome') + '</div>' +
+      '<div><strong>WhatsApp:</strong> ' + w + '</div>' +
+      '<div><strong>Saldo:</strong> R$ ' + (u.saldo || 0).toFixed(2).replace('.', ',') + '</div>' +
+      '<div><strong>Status:</strong> ' + (u.status || 'pendente') + '</div>' +
+      '<div style="margin-top:10px;">' +
+        '<button class="btn-excluir" onclick="excluirCadastro(\'' + w + '\')" style="width:100%;">🗑️ Excluir Usuário</button>' +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function aprovarCadastro(whatsapp){
+  db.ref('usuarios/' + whatsapp).update({status: 'aprovado'}).then(function() {
+    alert('✅ Cadastro aprovado!');
+  }).catch(function(err) { alert('Erro: ' + err.message); });
+}
+
+function rejeitarCadastro(whatsapp){
+  if(confirm('Rejeitar cadastro?')) {
+    db.ref('usuarios/' + whatsapp).remove().catch(function(err) { alert('Erro: ' + err.message); });
+  }
+}
+
+function excluirCadastro(whatsapp){
+  if(confirm('⚠️ Tem certeza que deseja excluir este usuário permanentemente?')) {
+    db.ref('usuarios/' + whatsapp).remove().then(function() {
+      alert('✅ Usuário excluído com sucesso.');
+    }).catch(function(err) { alert('Erro ao excluir: ' + err.message); });
+  }
+}
+
+function renderizarPedidosCartelas(pedidos){
+  var el = document.getElementById('listaPedidosCartelas');
+  if(!el) return;
+  if(pedidos.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum pedido de cartela</p>';
+    return;
+  }
+  var html = '';
+  pedidos.forEach(function(p) {
+    var classeAprovado = (p.status === 'liberado') ? 'aprovado' : '';
+    html += '<div class="card-item ' + classeAprovado + '">' +
+      '<div><strong>Jogador:</strong> ' + (p.jogadorNome || 'Desconhecido') + '</div>' +
+      '<div><strong>Qtd:</strong> ' + (p.quantidade || 0) + ' cartela(s) — ' + (p.horario || 'Geral') + '</div>' +
+      '<div><strong>Valor:</strong> R$ ' + (p.valor || 0).toFixed(2).replace('.', ',') + '</div>' +
+      '<div><strong>Status:</strong> ' + (p.status || 'pendente') + '</div>' +
+      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">';
+    if(p.status !== 'liberado'){
+      html += '<button class="btn-aprovar" onclick="liberarCartela(\'' + p.id + '\')">🔓 Liberar Cartelas</button>';
+    }
+    html += '<button class="btn-excluir" onclick="excluirPedidoCartela(\'' + p.id + '\')">🗑️ Excluir</button>' +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function liberarCartela(id){
+  db.ref('pedidos/' + id).update({status: 'liberado'}).then(function() {
+    alert('✅ Cartelas liberadas!');
+  }).catch(function(err) { alert('Erro: ' + err.message); });
+}
+
+function excluirPedidoCartela(id){
+  if(confirm('⚠️ Deseja excluir este pedido de cartela?')) {
+    db.ref('pedidos/' + id).remove().then(function() {
+      alert('✅ Pedido excluído.');
+    }).catch(function(err) { alert('Erro: ' + err.message); });
+  }
+}
+
+function renderizarPedidosGiros(pedidos){
+  var el = document.getElementById('listaPedidosGiros');
+  if(!el) return;
+  if(pedidos.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhum pedido de giro</p>';
+    return;
+  }
+  var html = '';
+  pedidos.forEach(function(p) {
+    var classeAprovado = (p.status === 'liberado') ? 'aprovado' : '';
+    html += '<div class="card-item ' + classeAprovado + '">' +
+      '<div><strong>Jogador:</strong> ' + (p.jogadorNome || 'Desconhecido') + '</div>' +
+      '<div><strong>Qtd:</strong> ' + (p.quantidade || 0) + ' giro(s)</div>' +
+      '<div><strong>Valor:</strong> R$ ' + (p.valor || 0).toFixed(2).replace('.', ',') + '</div>' +
+      '<div><strong>Status:</strong> ' + (p.status || 'pendente') + '</div>' +
+      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">';
+    if(p.status !== 'liberado'){
+      html += '<button class="btn-aprovar" onclick="liberarGirosAdmin(\'' + p.id + '\')">🔓 Liberar Giros</button>';
+    }
+    html += '<button class="btn-excluir" onclick="excluirPedidoGiro(\'' + p.id + '\')">🗑️ Excluir</button>' +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function liberarGirosAdmin(id){
+  try {
+    var snap = await db.ref('pedidosGiros/' + id).once('value');
+    var p = snap.val();
+    if(p){
+      await db.ref('usuarios/' + p.jogadorWhatsapp + '/girosRoleta').transaction(function(g) {
+        return (g || 0) + parseInt(p.quantidade || 0);
+      });
+      await db.ref('pedidosGiros/' + id).update({status: 'liberado'});
+      alert('✅ Giros liberados com sucesso!');
+    }
+  } catch(err) {
+    alert('Erro ao liberar giros: ' + err.message);
+  }
+}
+
+function excluirPedidoGiro(id){
+  if(confirm('⚠️ Deseja excluir este pedido de giros?')) {
+    db.ref('pedidosGiros/' + id).remove().then(function() {
+      alert('✅ Pedido excluído.');
+    }).catch(function(err) { alert('Erro: ' + err.message); });
+  }
+}
+
+function renderizarSolicitacoesCredito(solicitacoes){
+  var el = document.getElementById('listaSolicitacoesCredito');
+  if(!el) return;
+  if(solicitacoes.length === 0){
+    el.innerHTML = '<p class="vazio">Nenhuma solicitação pendente</p>';
+    return;
+  }
+  var html = '';
+  solicitacoes.forEach(function(s) {
+    var classeAprovado = (s.status === 'aprovado') ? 'aprovado' : '';
+    html += '<div class="card-item ' + classeAprovado + '">' +
+      '<div><strong>Tipo:</strong> ' + (s.tipo || 'Crédito') + '</div>' +
+      '<div><strong>Jogador:</strong> ' + (s.jogadorNome || 'Desconhecido') + '</div>' +
+      '<div><strong>WhatsApp:</strong> ' + (s.jogadorWhatsapp || '-') + '</div>' +
+      '<div><strong>Valor:</strong> R$ ' + (s.valor || 0).toFixed(2).replace('.', ',') + '</div>';
+    if(s.chavePix){
+      html += '<div style="color:var(--amarelo);margin-top:4px;"><strong>Chave Pix:</strong> ' + s.chavePix + '</div>';
+    }
+    html += '<div><strong>Status:</strong> ' + (s.status || 'pendente') + '</div>';
+    if(s.status !== 'aprovado'){
+      html += '<button class="btn-aprovar" style="margin-top:8px;" onclick="aprovarSolicitacao(\'' + s.id + '\', \'' + s.jogadorWhatsapp + '\', ' + (s.valor || 0) + ', \'' + (s.tipo || 'Crédito') + '\')">✅ Confirmar / Aprovar</button>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function aprovarSolicitacao(id, whatsapp, valor, tipo){
+  if(!confirm('⚠️ Confirmar esta operação?')) return;
+  try {
+    if(tipo === 'Resgate de Saldo/Prêmio'){
+      await db.ref('usuarios/' + whatsapp + '/saldo').transaction(function(s) {
+        return Math.max(0, (s || 0) - parseFloat(valor));
+      });
+    } else {
+      await db.ref('usuarios/' + whatsapp + '/saldo').transaction(function(s) {
+        return (s || 0) + parseFloat(valor);
+      });
+    }
+    await db.ref('solicitacoesCredito/' + id).update({status: 'aprovado'});
+    alert('✅ Solicitação confirmada! Saldo atualizado.');
+  } catch(err) {
+    alert('Erro ao aprovar solicitação: ' + err.message);
+  }
+}
+
+async function adicionarSaldoManual(){
+  try {
+    var w = document.getElementById('saldoWhatsapp').value.trim();
+    var v = parseFloat(document.getElementById('saldoValor').value);
+    if(!w || !v || v <= 0){ 
+      alert('⚠️ Preencha os campos corretamente.'); 
+      return; 
+    }
+    await db.ref('usuarios/' + w + '/saldo').transaction(function(s) {
+      return (s || 0) + v;
+    });
+    alert('✅ Saldo adicionado com sucesso!');
+    document.getElementById('saldoWhatsapp').value = '';
+    document.getElementById('saldoValor').value = '';
+  } catch(err) {
+    alert('Erro ao adicionar saldo: ' + err.message);
+  }
+}
+
+function enviarMensagemGeral(){
+  var texto = document.getElementById('textoMsgAdmin').value.trim();
+  if(!texto) { alert('Digite uma mensagem.'); return; }
+  db.ref('mensagensAdmin').push({ 
+    texto: texto, 
+    destino: 'todos', 
+    data: new Date().toLocaleString('pt-BR')
+  }).then(function() {
+    document.getElementById('textoMsgAdmin').value = '';
+    alert('✅ Mensagem enviada para todos os jogadores!');
+  }).catch(function(err) { alert('Erro ao enviar mensagem: ' + err.message); });
+}
+</script>
+</body>
+</html>

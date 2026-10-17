@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogador — Gira Itararé</title>
+<style>
+:root {--azul:#2196F3;--verde:#22c55e;--amarelo:#f59e0b;--vermelho:#ef4444;--fundo:#0f172a;--card:#1e293b;--texto:#f8fafc;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;scroll-behavior:smooth;}
+body{background:var(--fundo);color:var(--texto);padding:15px;min-height:100vh;}
+.container{max-width:1200px;margin:0 auto;}
+
+header{background:var(--card);padding:15px 20px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;}
+h1{font-size:1.1rem;color:var(--azul);}
+.saldo{font-weight:bold;color:var(--verde);background:rgba(34,197,94,.1);padding:6px 14px;border-radius:20px;font-size:1rem;}
+.sair{color:var(--vermelho);text-decoration:none;font-size:0.9rem;}
+
+.barra-topo-acao{background:var(--card);padding:12px 20px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;border-left:4px solid var(--verde);}
+.btn-atalho-comprar{background:var(--verde);color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;}
+.btn-atalho-roleta{background:var(--amarelo);color:#000;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;}
+.btn-atalho-saque{background:var(--azul);color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:0.9rem;display:inline-flex;align-items:center;gap:6px;}
+
+.grid{display:grid;grid-template-columns:320px 1fr;gap:20px;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+.painel{background:var(--card);padding:20px;border-radius:12px;margin-bottom:20px;}
+.painel h2{font-size:1rem;margin-bottom:15px;color:var(--azul);}
+
+.horarios{display:flex;gap:6px;margin-bottom:15px;}
+.horario{flex:1;padding:8px 6px;background:var(--fundo);border-radius:6px;cursor:pointer;border:2px solid transparent;text-align:center;}
+.horario.selecionado{border-color:var(--azul);background:#1a2c47;}
+.horario-nome{font-size:0.75rem;font-weight:bold;line-height:1.2;}
+
+.topo-status-partida{background:rgba(33,150,243,0.1);border:1px solid var(--azul);padding:12px;border-radius:8px;text-align:center;margin-bottom:15px;}
+.topo-status-partida span{font-size:1.1rem;font-weight:bold;color:var(--amarelo);}
+
+.globo{width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,#312e81,#1e1b4b);border:4px solid var(--azul);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:bold;color:var(--verde);margin:0 auto 10px;box-shadow:0 0 15px var(--azul);}
+.status-sorteio{text-align:center;color:#94a3b8;font-size:0.9rem;margin-bottom:20px;}
+
+.tabuleiro{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-bottom:20px;}
+.bola{aspect-ratio:1;background:var(--fundo);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;}
+.bola.sorteada{background:var(--verde);color:var(--fundo);font-weight:bold;}
+
+.quantidade{display:flex;align-items:center;gap:10px;margin:15px 0;}
+.quantidade button{width:40px;height:40px;padding:0;border-radius:50%;font-size:1.2rem;background:var(--azul);color:white;border:none;cursor:pointer;}
+.quantidade input{width:60px;text-align:center;padding:8px;border-radius:6px;border:none;background:var(--fundo);color:white;font-size:1rem;}
+
+.input-padrao{width:100%;padding:10px;border-radius:6px;border:none;background:var(--fundo);color:white;font-size:0.95rem;margin:6px 0 12px 0;}
+
+button{padding:12px 16px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:0.95rem;transition:opacity .2s;}
+button:hover{opacity:.9;}
+.btn-comprar{background:var(--verde);color:white;width:100%;margin-top:8px;}
+.btn-saldo{background:var(--amarelo);color:#000;width:100%;margin-top:8px;}
+.btn-sacar{background:var(--azul);color:white;width:100%;margin-top:8px;}
+
+.pedido{background:var(--fundo);padding:12px;border-radius:6px;margin-bottom:8px;border-left:3px solid var(--amarelo);font-size:0.9rem;}
+.pedido.liberado{border-left-color:var(--verde);}
+.status-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:bold;margin-top:4px;}
+.tag-pendente{background:rgba(245,158,11,.15);color:#fbbf24;}
+.tag-liberado{background:rgba(34,197,94,.15);color:#4ade80;}
+
+.caixa-mensagens{background:var(--fundo);border:1px solid #334155;border-radius:8px;padding:12px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.msg-admin{background:rgba(33,150,243,0.1);border-left:3px solid var(--azul);padding:10px;border-radius:6px;font-size:0.85rem;line-height:1.4;}
+.msg-premio{background:rgba(34,197,94,0.1);border-left:3px solid var(--verde);padding:10px;border-radius:6px;font-size:0.85rem;line-height:1.4;}
+
+.cartelas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;margin-top:15px;}
+.cartela{background:var(--fundo);border:2px solid #334155;border-radius:8px;padding:10px;}
+.cartela-topo{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-weight:bold;color:var(--azul);font-size:0.9rem;margin-bottom:6px;}
+.cartela-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
+.celula{aspect-ratio:1;background:#273549;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:bold;}
+.celula.marcada{background:var(--verde);color:var(--fundo);}
+
+.info-premios{background:rgba(34,197,94,.05);padding:12px;border-radius:8px;margin-top:15px;font-size:0.8rem;color:#94a3b8;line-height:1.6;}
+.vazio{text-align:center;color:#64748b;padding:20px;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body onload="iniciar()">
+<div class="container">
+<header>
+<h1>🎡 Gira Itararé</h1>
+<div>
+<div style="font-size:0.85rem;color:#94a3b8;">Bem-vindo, <span id="meuNome">...</span></div>
+<div class="saldo">R$ <span id="meuSaldo">0,00</span></div>
+</div>
+<a href="#" class="sair" onclick="sair()">Sair</a>
+</header>
+
+<div class="barra-topo-acao">
+  <div style="font-size:0.9rem;color:#cbd5e1;">Atalhos Rápidos:</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="roleta.html" class="btn-atalho-roleta">🎡 Roleta Instantânea</a>
+    <a href="#secaoSaque" class="btn-atalho-saque">💸 Solicitar Saque Pix</a>
+    <a href="#secaoComprar" class="btn-atalho-comprar">🛒 Comprar Cartelas</a>
+  </div>
+</div>
+
+<div class="grid">
+<div>
+<div class="painel">
+<div class="topo-status-partida">
+  <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:4px;">⏳ Próxima Partida / Início:</div>
+  <span id="tempoRestante">Selecione um horário</span>
+</div>
+
+<h2>🎡 Globo de Sorteio</h2>
+<div class="globo" id="bolaAtual">--</div>
+<p class="status-sorteio" id="statusSorteio">Selecione um horário</p>
+
+<h2>📋 Números Sorteados</h2>
+<div class="tabuleiro" id="tabuleiro"></div>
+
+<div class="info-premios">
+<strong>🏆 Prémio:</strong><br>
+🥇 Linha: R$ 20,00 | 🥈 Coluna: R$ 30,00 | 🏆 Cheia: R$ 150,00
+</div>
+</div>
+
+<div class="painel">
+<h2>🎫 Minhas Cartelas</h2>
+<div id="minhasCartelas" class="cartelas-grid">
+<p class="vazio">Nenhuma liberada ainda.<br>Compre abaixo!</p>
+</div>
+</div>
+
+<div class="painel">
+<h2>📢 Caixa de Mensagens e Avisos</h2>
+<div class="caixa-mensagens" id="caixaMensagens">
+<p class="vazio" style="padding:10px;">Nenhuma mensagem nova</p>
+</div>
+</div>
+</div>
+
+<div>
+<div class="painel" id="secaoComprar">
+<h2>🎫 Comprar Cartelas — R$ 1,49 cada</h2>
+
+<p style="font-size:0.85rem;color:#94a3b8;margin-bottom:8px;">1. Escolha o Horário:</p>
+<div class="horarios">
+<div class="horario" onclick="escolherHorario('Manhã (11:00)','11:00')" id="h-Manhã (11:00)">
+<div class="horario-nome">🌅 11:00<br>Manhã</div>
+</div>
+<div class="horario" onclick="escolherHorario('Tarde (15:45)','15:45')" id="h-Tarde (15:45)">
+<div class="horario-nome">🌤️ 15:45<br>Tarde</div>
+</div>
+<div class="horario" onclick="escolherHorario('Noite (19:30)','19:30')" id="h-Noite (19:30)">
+<div class="horario-nome">🌙 19:30<br>Noite</div>
+</div>
+</div>
+
+<p style="font-size:0.85rem;color:#94a3b8;margin-bottom:8px;">2. Quantidade de Cartelas:</p>
+<div class="quantidade">
+<button onclick="alterarQtd(-1)">−</button>
+<input type="number" id="quantidade" value="1" min="1" max="20" oninput="atualizarTotal()">
+<button onclick="alterarQtd(1)">+</button>
+</div>
+<p style="font-size:0.9rem;margin:8px 0;">Total: <strong>R$ <span id="total">1,49</span></strong></p>
+<button class="btn-comprar" onclick="comprarOuSolicitarCartelas()">🛒 Comprar / Solicitar Cartelas</button>
+<p style="font-size:0.75rem;color:#94a3b8;margin-top:10px;text-align:center;">Se tiver saldo, desconta na hora!<br>Se não, aguarde o admin liberar.</p>
+
+<h3 style="font-size:0.95rem;margin:20px 0 10px;">Meus Pedidos de Cartelas</h3>
+<div id="listaPedidos"><p class="vazio">Nenhum pedido enviado</p></div>
+</div>
+
+<div class="painel" id="secaoSaque">
+<h2>💸 Sacar Saldo (Via Pix)</h2>
+<p style="font-size:0.85rem;color:#94a3b8;margin-bottom:10px;">Preencha os seus dados para receber o Pix:</p>
+
+<label style="font-size:0.8rem;color:#94a3b8;">Nome Completo do Titular:</label>
+<input type="text" id="saqueNome" class="input-padrao" placeholder="Ex: João da Silva">
+
+<label style="font-size:0.8rem;color:#94a3b8;">Chave Pix (CPF, Telefone, E-mail, etc.):</label>
+<input type="text" id="saqueChave" class="input-padrao" placeholder="Digite sua chave Pix">
+
+<label style="font-size:0.8rem;color:#94a3b8;">Valor do Saque (R$):</label>
+<input type="number" id="saqueValor" class="input-padrao" placeholder="0.00" step="0.50" min="1">
+
+<button class="btn-sacar" onclick="solicitarSaquePix()">💸 Solicitar Saque Pix</button>
+
+<h3 style="font-size:0.95rem;margin:20px 0 10px;">Meus Pedidos de Saque</h3>
+<div id="listaSolicitacoesCredito"><p class="vazio" style="padding:10px;">Nenhuma solicitação de saque</p></div>
+</div>
+
+<div class="painel">
+<h2>💰 Adicionar Saldo / Depósito</h2>
+<div class="quantidade" style="margin:10px 0;">
+<input type="number" id="valorSolicitadoCredito" placeholder="Valor R$" step="0.50" min="1" style="width:100%;">
+</div>
+<button class="btn-saldo" onclick="solicitarCredito()">➕ Solicitar Adicionar Saldo</button>
+<button onclick="avisarAdminDeposito()" style="background:#22c55e;color:#fff;width:100%;margin-top:10px;">💬 Avisar Administrador que Fui/Vou Depositar</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB7DaddpD-6vqmbRnHRwR_wIAu81xWsg1Y",
+  authDomain: "gira-sorte.firebaseapp.com",
+  databaseURL: "https://gira-sorte-default-rtdb.firebaseio.com",
+  projectId: "gira-sorte",
+  storageBucket: "gira-sorte.appspot.com",
+  messagingSenderId: "886050266980",
+  appId: "1:886050266980:web:b1bbd1bb09daecd4c2e471"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const PRECO = 1.49; // Valor atualizado da cartela
+
+let usuario = null;
+let horarioSelecionado = null;
+let horaAlvoString = null;
+let qtd = 1;
+let numerosSorteados = [];
+let meusPedidos = [];
+let solicitacoesCredito = [];
+let mensagensAdmin = [];
+let meusPremios = [];
+
+function escolherHorario(periodo, hora){
+  horarioSelecionado = periodo;
+  horaAlvoString = hora;
+  document.querySelectorAll('.horario').forEach(el => el.classList.remove('selecionado'));
+  const elSel = document.getElementById('h-' + periodo);
+  if(elSel) elSel.classList.add('selecionado');
+  document.getElementById('statusSorteio').textContent = `Horário selecionado: ${hora}`;
+  atualizarContagemRegressiva();
+}
+
+setInterval(atualizarContagemRegressiva, 1000);
+
+function atualizarContagemRegressiva(){
+  const elTempo = document.getElementById('tempoRestante');
+  if(!horaAlvoString){
+    elTempo.textContent = "Escolha um horário abaixo ☝️";
+    return;
+  }
+
+  const agora = new Date();
+  const [horasAlvo, minutosAlvo] = horaAlvoString.split(':').map(Number);
+  const alvo = new Date();
+  alvo.setHours(horasAlvo, minutosAlvo, 0, 0);
+
+  if(agora > alvo){
+    alvo.setDate(alvo.getDate() + 1);
+  }
+
+  const diff = alvo - agora;
+  const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+  if(diff <= 0){
+    elTempo.textContent = "🟢 Partida em Andamento / Iniciando!";
+  } else {
+    elTempo.textContent = `${horas}h ${minutos}m ${segundos}s ( às ${horaAlvoString} )`;
+  }
+}
+
+function registrarPresenca() {
+  if(!usuario) return;
+  const statusRef = db.ref('statusUsuarios/' + usuario.whatsapp);
+  statusRef.set({
+    nome: usuario.nome,
+    online: true,
+    ultimaVez: firebase.database.ServerValue.TIMESTAMP
+  });
+  statusRef.onDisconnect().remove();
+}
+
+function iniciar(){
+  const logado = localStorage.getItem('bingo_usuario');
+  if(!logado){ window.location.href='cadastro.html'; return; }
+  usuario = JSON.parse(logado);
+  
+  db.ref('usuarios/' + usuario.whatsapp).once('value').then(snap => {
+    const dados = snap.val();
+    if(!dados || dados.status !== 'aprovado') {
+      localStorage.removeItem('bingo_usuario');
+      window.location.href = 'cadastro.html';
+      return;
+    }
+  });
+
+  registrarPresenca();
+
+  db.ref('usuarios/' + usuario.whatsapp).on('value', snap => {
+    const dados = snap.val();
+    if(dados) {
+      usuario.saldo = dados.saldo || 0;
+      localStorage.setItem('bingo_usuario', JSON.stringify(usuario));
+      document.getElementById('meuSaldo').textContent = usuario.saldo.toFixed(2).replace('.', ',');
+    }
+  });
+
+  document.getElementById('meuNome').textContent = usuario.nome.split(' ')[0];
+
+  db.ref('sorteio/numeros').on('value', snap=>{
+    numerosSorteados = snap.val() || [];
+    atualizarGlobo();
+    atualizarTabuleiro();
+    atualizarMinhasCartelas();
+    verificarPremiosBingoAutomatico();
+  });
+
+  db.ref('pedidos').orderByChild('jogadorWhatsapp').equalTo(usuario.whatsapp).on('value', snap=>{
+    const todos = snap.val() || {};
+    meusPedidos = Object.entries(todos).map(([id,val])=>({id,...val}));
+    atualizarPedidos();
+    atualizarMinhasCartelas();
+  });
+
+  db.ref('solicitacoesCredito').orderByChild('jogadorWhatsapp').equalTo(usuario.whatsapp).on('value', snap=>{
+    const todos = snap.val() || {};
+    solicitacoesCredito = Object.entries(todos).map(([id,val])=>({id,...val}));
+    atualizarSolicitacoesCredito();
+  });
+
+  db.ref('mensagensAdmin').on('value', snap => {
+    const todas = snap.val() || {};
+    mensagensAdmin = Object.values(todas).filter(m => m.destino === 'todos' || m.destino === usuario.whatsapp);
+    atualizarCaixaMensagens();
+  });
+
+  db.ref('vencedores/' + usuario.whatsapp).on('value', snap => {
+    const premios = snap.val() || {};
+    meusPremios = Object.entries(premios).map(([k, v]) => ({chave: k, ...v}));
+    atualizarCaixaMensagens();
+  });
+
+  criarTabuleiroVazio();
+}
+
+function sair(){
+  localStorage.removeItem('bingo_usuario');
+  window.location.href = 'cadastro.html';
+}
+
+function alterarQtd(valor){
+  let inputQtd = document.getElementById('quantidade');
+  let novaQtd = parseInt(inputQtd.value) + valor;
+  if(novaQtd >= 1 && novaQtd <= 20){
+    inputQtd.value = novaQtd;
+    qtd = novaQtd;
+    atualizarTotal();
+  }
+}
+
+function atualizarTotal(){
+  let inputQtd = document.getElementById('quantidade');
+  qtd = parseInt(inputQtd.value) || 1;
+  let total = qtd * PRECO;
+  document.getElementById('total').textContent = total.toFixed(2).replace('.', ',');
+}
+
+function criarTabuleiroVazio(){
+  const tab = document.getElementById('tabuleiro');
+  tab.innerHTML = '';
+  for(let i = 1; i <= 75; i++){
+    const bola = document.createElement('div');
+    bola.className = 'bola';
+    bola.id = 'bola-' + i;
+    bola.textContent = i;
+    tab.appendChild(bola);
+  }
+}
+
+function atualizarGlobo(){
+  const bolaAtualEl = document.getElementById('bolaAtual');
+  if(numerosSorteados.length > 0){
+    bolaAtualEl.textContent = numerosSorteados[numerosSorteados.length - 1];
+  } else {
+    bolaAtualEl.textContent = '--';
+  }
+}
+
+function atualizarTabuleiro(){
+  for(let i = 1; i <= 75; i++){
+    const bolaEl = document.getElementById('bola-' + i);
+    if(bolaEl){
+      if(numerosSorteados.includes(i)){
+        bolaEl.classList.add('sorteada');
+      } else {
+        bolaEl.classList.remove('sorteada');
+      }
+    }
+  }
+}
+
+function comprarOuSolicitarCartelas(){
+  if(!horarioSelecionado){
+    alert('Por favor, selecione um horário antes de comprar as cartelas!');
+    return;
+  }
+
+  let totalCompra = qtd * PRECO;
+  if(usuario.saldo >= totalCompra){
+    db.ref('usuarios/' + usuario.whatsapp + '/saldo').set(usuario.saldo - totalCompra);
+    db.ref('pedidos').push({
+      jogadorWhatsapp: usuario.whatsapp,
+      jogadorNome: usuario.nome,
+      quantidade: qtd,
+      horario: horarioSelecionado,
+      status: 'liberado',
+      data: firebase.database.ServerValue.TIMESTAMP
+    });
+    alert('Compra realizada com sucesso usando o seu saldo!');
+  } else {
+    db.ref('pedidos').push({
+      jogadorWhatsapp: usuario.whatsapp,
+      jogadorNome: usuario.nome,
+      quantidade: qtd,
+      horario: horarioSelecionado,
+      status: 'pendente',
+      data: firebase.database.ServerValue.TIMESTAMP
+    });
+    alert('Saldo insuficiente. Pedido enviado para liberação do administrador!');
+  }
+}
+
+function solicitarCredito(){
+  let valorInput = document.getElementById('valorSolicitadoCredito');
+  let valor = parseFloat(valorInput.value);
+  if(!valor || valor <= 0){
+    alert('Digite um valor válido para solicitar crédito.');
+    return;
+  }
+  db.ref('solicitacoesCredito').push({
+    jogadorWhatsapp: usuario.whatsapp,
+    jogadorNome: usuario.nome,
+    valor: valor,
+    tipo: 'Crédito',
+    status: 'pendente',
+    data: firebase.database.ServerValue.TIMESTAMP
+  });
+  valorInput.value = '';
+  alert('Solicitação de crédito enviada com sucesso!');
+}
+
+function avisarAdminDeposito(){
+  let valorInput = document.getElementById('valorSolicitadoCredito');
+  let valor = valorInput.value ? parseFloat(valorInput.value).toFixed(2).replace('.', ',') : '0,00';
+  let numeroAdmin = "5515999999999"; 
+  let mensagem = `Olá Administrador! O jogador *${usuario.nome}* (WhatsApp: ${usuario.whatsapp}) avisa que efetuará/efetuou um depósito no valor de *R$ ${valor}* para crédito na conta.`;
+  let urlWhatsapp = `https://wa.me/${numeroAdmin}?text=${encodeURIComponent(mensagem)}`;
+  window.open(urlWhatsapp, '_blank');
+}
+
+function solicitarSaquePix(){
+  let nome = document.getElementById('saqueNome').value.trim();
+  let chave = document.getElementById('saqueChave').value.trim();
+  let valor = parseFloat(document.getElementById('saqueValor').value);
+
+  if(!nome || !chave || !valor || valor <= 0){
+    alert('Preencha todos os campos do saque Pix corretamente.');
+    return;
+  }
+
+  if(valor > (usuario.saldo || 0)){
+    alert('⚠️ O valor do saque excede o seu saldo disponível!');
+    return;
+  }
+
+  db.ref('solicitacoesCredito').push({
+    jogadorWhatsapp: usuario.whatsapp,
+    jogadorNome: nome,
+    chavePix: chave,
+    valor: valor,
+    tipo: 'Resgate de Saldo/Prêmio',
+    status: 'pendente',
+    data: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  document.getElementById('saqueNome').value = '';
+  document.getElementById('saqueChave').value = '';
+  document.getElementById('saqueValor').value = '';
+  alert('✅ Pedido de saque Pix enviado com sucesso ao administrador!');
+}
+
+function atualizarCaixaMensagens(){
+  const caixa = document.getElementById('caixaMensagens');
+  let html = '';
+
+  meusPremios.forEach(p => {
+    html += `
+      <div class="msg-premio">
+        🎉 <strong>PARABÉNS! Prémio registado!</strong><br>
+        🏆 ${p.tipo} (${p.detalhe})<br>
+        💰 Valor: R$ ${(p.valorPremio || 0).toFixed(2).replace('.', ',')} | Status: <strong>${p.statusPagamento === 'pago' ? 'Pago' : 'Pendente'}</strong>
+      </div>
+    `;
+  });
+
+  mensagensAdmin.forEach(m => {
+    html += `
+      <div class="msg-admin">
+        💬 <strong>Mensagem do Administrador:</strong><br>
+        ${m.texto}
+      </div>
+    `;
+  });
+
+  if(html === ''){
+    caixa.innerHTML = '<p class="vazio" style="padding:10px;">Nenhuma mensagem nova</p>';
+  } else {
+    caixa.innerHTML = html;
+  }
+}
+
+function atualizarPedidos(){
+  const lista = document.getElementById('listaPedidos');
+  if(meusPedidos.length === 0){
+    lista.innerHTML = '<p class="vazio">Nenhum pedido enviado</p>';
+    return;
+  }
+  lista.innerHTML = meusPedidos.map(p => `
+    <div class="pedido ${p.status === 'liberado' ? 'liberado' : ''}">
+      <div><strong>${p.quantidade} cartela(s)</strong> (${p.horario || 'Geral'}) — R$ ${(p.quantidade * PRECO).toFixed(2).replace('.', ',')}</div>
+      <span class="status-tag ${p.status === 'liberado' ? 'tag-liberado' : 'tag-pendente'}">
+        ${p.status === 'liberado' ? 'Liberado' : 'Pendente'}
+      </span>
+    </div>
+  `).join('');
+}
+
+function atualizarSolicitacoesCredito(){
+  const lista = document.getElementById('listaSolicitacoesCredito');
+  if(solicitacoesCredito.length === 0){
+    lista.innerHTML = '<p class="vazio" style="padding:10px;">Nenhuma solicitação de saque</p>';
+    return;
+  }
+  lista.innerHTML = solicitacoesCredito.map(s => `
+    <div class="pedido ${s.status === 'aprovado' || s.status === 'liberado' ? 'liberado' : ''}">
+      <div><strong>${s.tipo || 'Crédito'}:</strong> R$ ${s.valor.toFixed(2).replace('.', ',')} ${s.chavePix ? `<br><span style="font-size:0.75rem;color:#94a3b8;">Pix: ${s.chavePix} (${s.jogadorNome})</span>` : ''}</div>
+      <span class="status-tag ${s.status === 'aprovado' || s.status === 'liberado' ? 'tag-liberado' : 'tag-pendente'}">
+        ${s.status === 'aprovado' || s.status === 'liberado' ? 'Aprovado / Pago' : 'Pendente'}
+      </span>
+    </div>
+  `).join('');
+}
+
+function atualizarMinhasCartelas(){
+  const container = document.getElementById('minhasCartelas');
+  const cartelasLiberadas = meusPedidos.filter(p => p.status === 'liberado');
+  
+  if(cartelasLiberadas.length === 0){
+    container.innerHTML = '<p class="vazio">Nenhuma liberada ainda.<br>Compre abaixo!</p>';
+    return;
+  }
+
+  let html = '';
+  let contadorCartela = 1;
+  cartelasLiberadas.forEach(pedido => {
+    for(let i = 0; i < pedido.quantidade; i++){
+      html += `
+        <div class="cartela" id="cartela-box-${contadorCartela}">
+          <div class="cartela-topo">
+            <span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+          </div>
+          <div class="cartela-nums">
+            ${gerarCelulasExemplo(contadorCartela)}
+          </div>
+          <div style="font-size:0.75rem;color:#94a3b8;margin-top:6px;text-align:center;">Cartela #${contadorCartela} (${pedido.horario || ''})</div>
+        </div>
+      `;
+      contadorCartela++;
+    }
+  });
+  container.innerHTML = html;
+}
+
+function gerarCelulasExemplo(seed){
+  let celulas = '';
+  for(let c = 1; c <= 25; c++){
+    let numPseudo = ((seed * c * 3) % 75) + 1;
+    let marcada = numerosSorteados.includes(numPseudo) ? 'marcada' : '';
+    celulas += `<div class="celula ${marcada}" data-num="${numPseudo}">${numPseudo}</div>`;
+  }
+  return celulas;
+}
+
+function verificarPremiosBingoAutomatico(){
+  if(!horarioSelecionado || numerosSorteados.length === 0) return;
+
+  const horarioKey = horarioSelecionado.replace(/[^a-zA-Z0-9]/g, '_');
+  const dataHoraAtual = new Date().toLocaleString('pt-BR');
+
+  let matriz = [];
+  for(let l = 0; l < 5; l++){
+    let linha = [];
+    for(let c = 0; c < 5; c++){
+      let seed = 1;
+      let numPseudo = ((seed * (l*5 + c + 1) * 3) % 75) + 1;
+      linha.push(numPseudo);
+    }
+    matriz.push(linha);
+  }
+
+  for (let l = 0; l < 5; l++) {
+    let linhaCompleta = true;
+    for (let c = 0; c < 5; c++) {
+      if (!numerosSorteados.includes(matriz[l][c])) {
+        linhaCompleta = false;
+        break;
+      }
+    }
+    if (linhaCompleta) {
+      const chavePremio = `linha_${l}_${horarioKey}`;
+      db.ref(`vencedoresPartida/${horarioKey}/linha_${l}`).once('value', snap => {
+        if (!snap.exists()) {
+          db.ref(`vencedoresPartida/${horarioKey}/linha_${l}`).set(usuario.whatsapp);
+          db.ref(`vencedores/${usuario.whatsapp}/${chavePremio}`).set({
+            jogadorNome: usuario.nome,
+            tipo: 'Linha',
+            detalhe: `Linha ${l + 1} (${horarioSelecionado})`,
+            valorPremio: 20.00,
+            dataFormatada: dataHoraAtual,
+            statusPagamento: 'pendente'
+          });
+          db.ref(`usuarios/${usuario.whatsapp}/saldo`).transaction(s => (s || 0) + 20.00);
+          alert(`🎉 PARABÉNS! Você fez a LINHA e ganhou R$ 20,00! O Administrador foi avisado.`);
+        }
+      });
+      break;
+    }
+  }
+
+  for (let c = 0; c < 5; c++) {
+    let colunaCompleta = true;
+    for (let l = 0; l < 5; l++) {
+      if (!numerosSorteados.includes(matriz[l][c])) {
+        colunaCompleta = false;
+        break;
+      }
+    }
+    if (colunaCompleta) {
+      const chavePremio = `coluna_${c}_${horarioKey}`;
+      db.ref(`vencedoresPartida/${horarioKey}/coluna_${c}`).once('value', snap => {
+        if (!snap.exists()) {
+          db.ref(`vencedoresPartida/${horarioKey}/coluna_${c}`).set(usuario.whatsapp);
+          db.ref(`vencedores/${usuario.whatsapp}/${chavePremio}`).set({
+            jogadorNome: usuario.nome,
+            tipo: 'Coluna',
+            detalhe: `Coluna ${c + 1} (${horarioSelecionado})`,
+            valorPremio: 30.00,
+            dataFormatada: dataHoraAtual,
+            statusPagamento: 'pendente'
+          });
+          db.ref(`usuarios/${usuario.whatsapp}/saldo`).transaction(s => (s || 0) + 30.00);
+          alert(`🎉 PARABÉNS! Você fez a COLUNA e ganhou R$ 30,00! O Administrador foi avisado.`);
+        }
+      });
+      break;
+    }
+  }
+
+  let cartelaCheia = true;
+  for (let l = 0; l < 5; l++) {
+    for (let c = 0; c < 5; c++) {
+      if (!numerosSorteados.includes(matriz[l][c])) {
+        cartelaCheia = false;
+        break;
+      }
+    }
+    if (!cartelaCheia) break;
+  }
+
+  if (cartelaCheia) {
+    const chavePremio = `cartela_cheia_${horarioKey}`;
+    db.ref(`vencedoresPartida/${horarioKey}/cartelaCheia`).once('value', snap => {
+      if (!snap.exists()) {
+        db.ref(`vencedoresPartida/${horarioKey}/cartelaCheia`).set(usuario.whatsapp);
+        db.ref(`vencedores/${usuario.whatsapp}/${chavePremio}`).set({
+          jogadorNome: usuario.nome,
+          tipo: 'Cartela Cheia',
+          detalhe: `BINGO Completo (${horarioSelecionado})`,
+          valorPremio: 150.00,
+          dataFormatada: dataHoraAtual,
+          statusPagamento: 'pendente'
+        });
+        db.ref(`usuarios/${usuario.whatsapp}/saldo`).transaction(s => (s || 0) + 150.00);
+        alert(`🏆 BINGO! PARABÉNS! Você completou a CARTELA CHEIA e ganhou R$ 150,00! O Administrador foi avisado.`);
+      }
+    });
+  }
+}
+
+window.addEventListener('DOMContentLoaded', iniciar);
+</script>
+</body>
+</html>

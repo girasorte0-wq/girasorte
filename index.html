@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gira Itararé - Cartela da Sorte</title>
+    <style>
+        /* Estilos gerais da página */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0b1329; /* Fundo escuro elegante */
+            margin: 0;
+            padding: 0;
+            color: #ffffff;
+        }
+
+        /* Topo do Site (Apenas botões de Login e Cadastro alinhados à direita) */
+        header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 15px 40px;
+            background-color: #060a17;
+            border-bottom: 1px solid #1a264a;
+            gap: 15px;
+        }
+
+        /* Área de Login e Cadastro no Topo */
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .auth-buttons a {
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-login {
+            background-color: transparent;
+            color: #ffd700;
+            border: 2px solid #ffd700;
+        }
+
+        .btn-login:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-cadastro {
+            background-color: #ffd700;
+            color: #0b1329;
+            border: 2px solid #ffd700;
+        }
+
+        .btn-cadastro:hover {
+            background-color: #e5c100;
+            transform: translateY(-2px);
+        }
+
+        /* Seção da Logo (GIF Animado) logo abaixo do topo */
+        .logo-section {
+            text-align: center;
+            padding: 25px 20px 10px 20px;
+        }
+
+        .logo-section img {
+            max-width: 260px; /* Tamanho ajustado do GIF animado */
+            height: auto;
+            display: inline-block;
+            filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.4)); /* Efeito de brilho elegante */
+        }
+
+        /* Container principal dos banners */
+        .banner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Espaço entre os dois banners */
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto 30px auto;
+            padding: 0 15px;
+            box-sizing: border-box;
+        }
+
+        /* Estilo de cada banner/link */
+        .banner-item {
+            flex: 1;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: block;
+            text-decoration: none;
+        }
+
+        /* Estilo da imagem do banner */
+        .banner-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        /* Efeito interativo ao passar o mouse */
+        .banner-item:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .banner-item:hover img {
+            transform: scale(1.02);
+        }
+
+        /* Estilo do Rodapé */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #8b9bb4;
+            font-size: 0.9rem;
+            border-top: 1px solid #1a264a;
+            margin-top: 40px;
+        }
+
+        footer p {
+            margin: 5px 0;
+        }
+
+        /* Responsividade para telemóveis e tablets */
+        @media (max-width: 768px) {
+            header {
+                justify-content: center;
+                padding: 15px 20px;
+            }
+
+            .banner-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Topo do Site (Apenas botões de Login e Cadastro) -->
+    <header>
+        <div class="auth-buttons">
+            <a href="login.html" class="btn-login">Entrar</a>
+            <a href="cadastro.html" class="btn-cadastro">Cadastrar</a>
+        </div>
+    </header>
+
+    <!-- Logo / GIF Animado Logo Abaixo do Topo -->
+    <div class="logo-section">
+        <a href="index.html">
+            <!-- Substitua o link abaixo pelo link direto do seu GIF animado gerado -->
+            <img src="https://i.imgur.com/b1m7ZPb.gif" alt="Gira Itararé - Logótipo Animado">
+        </a>
+    </div>
+
+    <!-- Secção de Banners com Links Ativos -->
+    <main>
+        <div class="banner-container">
+            
+            <!-- Banner 1: Cartela Premiada -->
+            <a href="jogador.html" class="banner-item" title="Ir para Cartela Premiada">
+                <img src="https://i.imgur.com/Z9PuPTF.jpeg" alt="Gira Sorte - Cartela Premiada">
+            </a>
+
+            <!-- Banner 2: Roleta Instantânea -->
+            <a href="roleta.html" class="banner-item" title="Ir para Roleta Instantânea">
+                <img src="https://i.imgur.com/2K07xan.jpeg" alt="Gira Sorte - Roleta Instantânea">
+            </a>
+            
+        </div>
+    </main>
+
+    <!-- Rodapé Corrigido -->
+    <footer>
+        <p>&copy; Todos os Direitos Reservados a Gira Sorte Company</p>
+        <p>✉️ Email: giraitarare@gmail.com</p>
+    </footer>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  // 👇 COLE AQUI OS SEUS DADOS DO FIREBASE
+  apiKey: "AIzaSyB7DaddpD-6vqmbRnHRwR_wIAu81xWsg1Y",
+  authDomain: "gira-sorte.firebaseapp.com",
+  databaseURL: "https://gira-sorte-default-rtdb.firebaseio.com",
+  projectId: "gira-sorte",
+  storageBucket: "gira-sorte.firebasestorage.app",
+  messagingSenderId: "886050266980",
+  appId: "1:886050266980:web:b1bbd1bb09daecd4c2e471"
+};
+firebase.initializeApp(firebaseConfig);
+</script>
+
+</body>
+</html>
